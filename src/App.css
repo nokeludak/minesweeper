@@ -24,7 +24,7 @@
   width: 40px;
   height: 40px;
   border: 1px solid rgb(16, 201, 207);
-  background: #11203d;
+  background: #09698f;
   color: #ffffff;
   display: flex;
   justify-content: center;
@@ -33,13 +33,14 @@
 }
 
 .box:hover {
-  background: #102c64;
+  background: #e2e5ed;
+ 
 }
 
 
 
 .board {
-  padding: 70px 0;
+  padding: 20px 0;
   justify-content: center;
   text-align: center;
   display: inline-block;
@@ -59,4 +60,13 @@
   color: rgb(255, 255, 255);
   font-weight: 700;
   cursor: pointer;
+  
 }
+
+.container{
+  padding: 5px;
+}
+.crvena{
+  color: rgb(255, 0, 0);
+}
+

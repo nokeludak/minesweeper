@@ -37,23 +37,26 @@ const Board = () => {
       e.preventDefault();
       grid[x][y].flagged = false;
       return setNonMineCount(nonMineCount + 1);
+      
     }
-    e.preventDefault();
+    e.preventDefault() ;
     let newGrid = JSON.parse(JSON.stringify(grid));
     console.log(newGrid[x][y]);
-    newGrid[x][y].flagged = true || gameOver ;
+    newGrid[x][y].flagged = true ;
     setGrid(newGrid);
-    setNonMineCount(nonMineCount - 1);
+    setNonMineCount(c => Math.max(c - 1, 0));
+    
   };
 
   // Reveal Cell
   const revealCell = (x, y) => {
+    
     if (grid[x][y].revealed || gameOver) {
-      return;
-    }
+      return;  
+    } 
     let newGrid = JSON.parse(JSON.stringify(grid));
     if (newGrid[x][y].value === "X") {
-      alert("mine found");
+      
       for (let i = 0; i < mineLocations.length; i++) {
         if (!newGrid[mineLocations[i][0]][mineLocations[i][1]].revealed) {
           // setInterval(() => {
@@ -65,12 +68,14 @@ const Board = () => {
     } else {
       let newRevealedBoard = Revealed(newGrid, x, y, nonMineCount);
       setGrid(newRevealedBoard.arr);
+      
     }
+    
   };
 
   return (
-    <div>
-      <p>{nonMineCount}</p>
+    <div className="container">
+      <p> {nonMineCount}</p>
       {gameOver}
       {grid.map((singleRow, index1) => {
         return (
@@ -79,6 +84,7 @@ const Board = () => {
               return (
                 <div>
                   <Cell
+                    
                     revealCell={revealCell}
                     details={singleBlock}
                     updateFlag={updateFlag}
@@ -92,7 +98,8 @@ const Board = () => {
         );
         
       })}
-      {gameOver && <button className="gameover" onClick={restartGame} >TRY AGAIN</button> }
+      {gameOver && <button className="gameover" onClick={restartGame} >TRY AGAIN</button>}
+      {gameOver && <h1 className="crvena" >GAME OVER</h1>}
     </div>
     
   );
@@ -100,3 +107,5 @@ const Board = () => {
 };
 
 export default Board;
+
+
