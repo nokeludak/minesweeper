@@ -1,16 +1,23 @@
-import "./App.css";
+import React from 'react';
+
 import Board from "./components/Board";
 
-function App() {
-  return (
-    <div className="App">
-      <h1>MineSweeper</h1>
-      <div className="board">
-        <Board />
-        
+
+class App extends React.Component {
+  state = {
+    height: 8,
+    width: 8,
+    mines: 10
+  };
+
+  render() {
+    const { height, width, mines } = this.state;
+    return (
+      <div className="game">
+        <Board height={height} width={width} mines={mines} />
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 export default App;

@@ -1,111 +1,336 @@
-import React, { useEffect, useState } from "react";
-import Game from "./Game";
+/* eslint-disable array-callback-return */
+import React from "react";
+import PropTypes from "prop-types";
 import Cell from "./Cell";
-import Revealed from "./Revealed";
 
-const Board = () => {
-  const [grid, setGrid] = useState([]);
-  const [nonMineCount, setNonMineCount] = useState(10);
-  const [mineLocations, setMineLocations] = useState([]);
-  const [gameOver, setGameOver] = useState(false);
-  
+export default class Board extends React.Component {
+  state = {
+    boardData: this.initBoardData(
+      this.props.height,
+      this.props.width,
+      this.props.mines
+    ),
+    gameStatus: "Game in progress",
+    mineCount: this.props.mines,
+    gameStart: true,
+    span: (
+      <button onClick={() => this.restart(this.state.boardData)}>
+        Play again?
+      </button>
+    ),
+  };
 
+  /* Helper Functions */
 
- 
- const restartGame = () => {
-    const newBoard = Game(8, 8, 10, setMineLocations);
-    setNonMineCount(10)
-    setGrid(newBoard.board);
-    setMineLocations(newBoard.mineLocation);
-    setGameOver(false);
-    
+  // get mines
+  getMines(data) {
+    let mineArray = [];
+    data.map((datarow) => {
+      datarow.map((dataitem) => {
+        if (dataitem.isMine) {
+          mineArray.push(dataitem);
+        }
+      });
+    });
+
+    return mineArray;
   }
 
-  useEffect(() => {
-    // Creating a board
-    function freshBoard() {
-      const newBoard = Game(8, 8, 10, setMineLocations);
-      setMineLocations(newBoard.mineLocation);
-      setGrid(newBoard.board);
-    }
-    freshBoard();
-  }, []);
+  // get Flags
+  getFlags(data) {
+    let mineArray = [];
 
-  // On Right Click
-  const updateFlag = (e, x, y) => {
-    if (grid[x][y].flagged || gameOver) {
-      e.preventDefault();
-      grid[x][y].flagged = false;
-      return setNonMineCount(nonMineCount + 1);
-      
-    }
-    e.preventDefault() ;
-    let newGrid = JSON.parse(JSON.stringify(grid));
-    console.log(newGrid[x][y]);
-    newGrid[x][y].flagged = true ;
-    setGrid(newGrid);
-    setNonMineCount(c => Math.max(c - 1, 0));
-    
-  };
+    data.map((datarow) => {
+      datarow.map((dataitem) => {
+        if (dataitem.isFlagged) {
+          mineArray.push(dataitem);
+        }
+      });
+    });
 
-  // Reveal Cell
-  const revealCell = (x, y) => {
-    
-    if (grid[x][y].revealed || gameOver) {
-      return;  
-    } 
-    let newGrid = JSON.parse(JSON.stringify(grid));
-    if (newGrid[x][y].value === "X") {
-      
-      for (let i = 0; i < mineLocations.length; i++) {
-        if (!newGrid[mineLocations[i][0]][mineLocations[i][1]].revealed) {
-          // setInterval(() => {
-          newGrid[mineLocations[i][0]][mineLocations[i][1]].revealed = true;
-          setGrid(newGrid);
-          setGameOver(true);
+    return mineArray;
+  }
+
+  // get Hidden cells
+  getHidden(data) {
+    let mineArray = [];
+
+    data.map((datarow) => {
+      datarow.map((dataitem) => {
+        if (!dataitem.isRevealed) {
+          mineArray.push(dataitem);
+        }
+      });
+    });
+
+    return mineArray;
+  }
+
+  getRandomNumber(dimension) {
+    return Math.floor(Math.random() * 1000 + 1) % dimension;
+  }
+
+  // Gets initial board data
+  initBoardData(height, width, mines) {
+    let data = this.createEmptyArray(height, width);
+    data = this.plantMines(data, height, width, mines);
+    data = this.getNeighbours(data, height, width);
+    return data;
+  }
+
+  restart() {
+    window.location.reload();
+  }
+
+  createEmptyArray(height, width) {
+    let data = [];
+
+    for (let i = 0; i < height; i++) {
+      data.push([]);
+      for (let j = 0; j < width; j++) {
+        data[i][j] = {
+          x: i,
+          y: j,
+          isMine: false,
+          neighbour: 0,
+          isRevealed: false,
+          isEmpty: false,
+          isFlagged: false,
+        };
+      }
+    }
+    return data;
+  }
+
+  plantMines(data, height, width, mines) {
+    let randomx,
+      randomy,
+      minesPlanted = 0;
+
+    while (minesPlanted < mines) {
+      randomx = this.getRandomNumber(width);
+      randomy = this.getRandomNumber(height);
+      if (!data[randomx][randomy].isMine) {
+        data[randomx][randomy].isMine = true;
+        minesPlanted++;
+      }
+    }
+
+    return data;
+  }
+
+  // get number of neighbouring mines for each board cell
+  getNeighbours(data, height, width) {
+    let updatedData = data;
+    for (let i = 0; i < height; i++) {
+      for (let j = 0; j < width; j++) {
+        if (data[i][j].isMine !== true) {
+          let mine = 0;
+          const area = this.traverseBoard(data[i][j].x, data[i][j].y, data);
+          area.map((value) => {
+            if (value.isMine) {
+              mine++;
+            }
+          });
+          if (mine === 0) {
+            updatedData[i][j].isEmpty = true;
+          }
+          updatedData[i][j].neighbour = mine;
         }
       }
-    } else {
-      let newRevealedBoard = Revealed(newGrid, x, y, nonMineCount);
-      setGrid(newRevealedBoard.arr);
-      
     }
-    
-  };
 
-  return (
-    <div className="container">
-      <p> {nonMineCount}</p>
-      {gameOver}
-      {grid.map((singleRow, index1) => {
+    return updatedData;
+  }
+
+  // looks for neighbouring cells and returns them
+  traverseBoard(x, y, data) {
+    const el = [];
+
+    //up
+    if (x > 0) {
+      el.push(data[x - 1][y]);
+    }
+
+    //down
+    if (x < this.props.height - 1) {
+      el.push(data[x + 1][y]);
+    }
+
+    //left
+    if (y > 0) {
+      el.push(data[x][y - 1]);
+    }
+
+    //right
+    if (y < this.props.width - 1) {
+      el.push(data[x][y + 1]);
+    }
+
+    // top left
+    if (x > 0 && y > 0) {
+      el.push(data[x - 1][y - 1]);
+    }
+
+    // top right
+    if (x > 0 && y < this.props.width - 1) {
+      el.push(data[x - 1][y + 1]);
+    }
+
+    // bottom right
+    if (x < this.props.height - 1 && y < this.props.width - 1) {
+      el.push(data[x + 1][y + 1]);
+    }
+
+    // bottom left
+    if (x < this.props.height - 1 && y > 0) {
+      el.push(data[x + 1][y - 1]);
+    }
+
+    return el;
+  }
+
+  // reveals the whole board
+  revealBoard() {
+    let updatedData = this.state.boardData;
+    updatedData.map((datarow) => {
+      datarow.map((dataitem) => {
+        dataitem.isRevealed = true;
+      });
+    });
+    this.setState({
+      boardData: updatedData,
+    });
+  }
+
+  /* reveal logic for empty cell */
+  revealEmpty(x, y, data) {
+    let area = this.traverseBoard(x, y, data);
+    area.map((value) => {
+      if (
+        !value.isFlagged &&
+        !value.isRevealed &&
+        (value.isEmpty || !value.isMine)
+      ) {
+        data[value.x][value.y].isRevealed = true;
+        if (value.isEmpty) {
+          this.revealEmpty(value.x, value.y, data);
+        }
+      }
+    });
+    return data;
+  }
+
+  // Handle User Events
+
+  handleCellClick(x, y) {
+    // check if revealed. return if true.
+    if (
+      this.state.boardData[x][y].isRevealed ||
+      this.state.boardData[x][y].isFlagged
+    )
+      return null;
+
+    // check if mine. game over if true
+    if (this.state.boardData[x][y].isMine) {
+      this.setState({ gameStatus: "You Lost." });
+      this.revealBoard();
+      this.setState({ gameStart: false });
+    }
+
+    let updatedData = this.state.boardData;
+    updatedData[x][y].isFlagged = false;
+    updatedData[x][y].isRevealed = true;
+
+    if (updatedData[x][y].isEmpty) {
+      updatedData = this.revealEmpty(x, y, updatedData);
+    }
+
+    if (this.getHidden(updatedData).length === this.props.mines) {
+      this.setState({ mineCount: 0, gameStatus: "You Win." });
+      this.revealBoard();
+      this.setState({ gameStart: false });
+    }
+
+    this.setState({
+      boardData: updatedData,
+      mineCount: this.props.mines - this.getFlags(updatedData).length,
+    });
+  }
+
+  handleContextMenu(e, x, y) {
+    e.preventDefault();
+    let updatedData = this.state.boardData;
+    let mines = this.state.mineCount;
+
+    // check if already revealed
+    if (updatedData[x][y].isRevealed) return;
+
+    if (updatedData[x][y].isFlagged) {
+      updatedData[x][y].isFlagged = false;
+      mines++;
+    } 
+    else if (mines > 0) {
+      updatedData[x][y].isFlagged = true;
+      mines--;
+    }
+
+    if (mines === 0) {
+      const mineArray = this.getMines(updatedData);
+      const FlagArray = this.getFlags(updatedData);
+      if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
+        this.setState({ mineCount: 0, gameStatus: "You Win." });
+        this.revealBoard();
+        this.setState({ gameStart: false });
+      }
+    }
+
+    this.setState({
+      boardData: updatedData,
+      mineCount: mines,
+    });
+  }
+
+  renderBoard(data) {
+    return data.map((datarow) => {
+      return datarow.map((dataitem) => {
         return (
-          <div style={{ display: "flex" }} key={index1}>
-            {singleRow.map((singleBlock, index2) => {
-              return (
-                <div>
-                  <Cell
-                    
-                    revealCell={revealCell}
-                    details={singleBlock}
-                    updateFlag={updateFlag}
-                    key={index2}
-                  />
-                </div>
-              );
-            })}
+          <div key={dataitem.x * datarow.length + dataitem.y}>
+            <Cell
+              onClick={() => this.handleCellClick(dataitem.x, dataitem.y)}
+              cMenu={(e) => this.handleContextMenu(e, dataitem.x, dataitem.y)}
+              value={dataitem}
+            />
+            {datarow[datarow.length - 1] === dataitem ? (
+              <div className="clear" />
+            ) : (
+              ""
+            )}
           </div>
-          
         );
-        
-      })}
-      {gameOver && <button className="gameover" onClick={restartGame} >TRY AGAIN</button>}
-      {gameOver && <h1 className="crvena" >GAME OVER</h1>}
-    </div>
-    
-  );
-  
+      });
+    });
+  }
+
+  render() {
+    return (
+      <div className="board">
+        <div className="game-info">
+          <h1>Minesweeper</h1>
+          <span className="info">Mines remaining: {this.state.mineCount}</span>
+          <h3 className="info">{this.state.gameStatus}</h3>
+          <div className="play">
+            {!this.state.gameStart && this.state.span}
+          </div>
+        </div>
+        {this.renderBoard(this.state.boardData)}
+      </div>
+    );
+  }
+}
+
+Board.propTypes = {
+  height: PropTypes.number,
+  width: PropTypes.number,
+  mines: PropTypes.number,
 };
-
-export default Board;
-
-

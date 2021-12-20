@@ -1,48 +1,29 @@
-import React from "react";
+import React from 'react';
+
+export default class Cell extends React.Component {
 
 
-export default function Cell({ details, updateFlag, revealCell }) {
- 
-  const box = {
-     background: details.revealed
-        ? details.value === "X"
-        : chexPattern(details.x, details.y),
-    
-  };
+    getValue(){
+        if (!this.props.value.isRevealed){
+            return this.props.value.isFlagged ? "🚩" : null;
+        }
+        if (this.props.value.isMine) {
+            return "💣";
+        }
+        if(this.props.value.neighbour === 0 ){
+            return null;
+        }
+        return this.props.value.neighbour;
+    }
 
-  return (
+    render(){
+        let className = "cell" + (this.props.value.isRevealed ? "" : " hidden") + (this.props.value.isMine ? " is-mine" : "") + (this.props.value.isFlagged ? " is-flag" : "");
 
-    <div  className="box" 
-    style={box}
-    onContextMenu={(e) => 
-    updateFlag(e, details.x, details.y)} 
-    onClick={() =>  revealCell(details.x, details.y)}>
-      {/*details.revealed ? details.value : ""*/}
-      {details.flagged && !details.revealed ? (
-        "🚩"
-      ) : details.revealed && details.value !== 0 ? (
-        details.value === "X" ? (
-          "💣"
-        ) : (
-         details.value 
-        ) 
-      ) : (
-        ""
-      )}
 
-    </div>
-    
-  )
+        return (
+            <div ref="cell" onClick={this.props.onClick} className={className} onContextMenu={this.props.cMenu}>
+                {this.getValue()}
+            </div>
+        );
+    }
 }
-
-const chexPattern = (x, y) => {
-  if (x % 2 === 0 && y % 2 === 0) {
-    return "#393a3c";
-  } else if (x % 2 === 0 && y % 2 !== 0) {
-    return "#393a3c";
-  } else if (x % 2 !== 0 && y % 2 === 0) {
-    return "#393a3c";
-  } else {
-    return "#393a3c";
-  }
-};
