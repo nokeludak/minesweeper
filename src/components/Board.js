@@ -248,7 +248,7 @@ export default class Board extends React.Component {
 
     if (this.getHidden(updatedData).length === this.props.mines) {
       this.setState({ mineCount: 0, gameStatus: "You Win." });
-      this.revealBoard();
+      
       this.setState({ gameStart: false });
     }
 
@@ -280,8 +280,7 @@ export default class Board extends React.Component {
       const FlagArray = this.getFlags(updatedData);
       if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
         this.setState({ mineCount: 0, gameStatus: "You Win." });
-        this.revealBoard();
-        this.setState({ gameStart: false });
+       
       }
     }
 
